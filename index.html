@@ -36,6 +36,9 @@
                 </div>
             </div>
             <div class="flex items-center space-x-4">
+                <button onclick="openAuthorModal()" class="text-sm text-slate-300 hover:text-white font-medium transition">
+                    About Authors
+                </button>
                 <button onclick="runSimulation()" id="runBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg transition transform hover:scale-105 shadow-md flex items-center space-x-2">
                     <i class="ph ph-play-circle text-xl"></i>
                     <span>Run Simulation</span>
@@ -239,6 +242,47 @@
         </div>
     </main>
 
+    <!-- Author Modal -->
+    <div id="authorModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-[fadeIn_0.3s_ease-out]">
+            <div class="bg-slate-900 p-6 text-white relative">
+                <button onclick="closeAuthorModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+                <h3 class="text-xl font-bold">Project Authors</h3>
+                <p class="text-xs text-slate-400 mt-1">Web-Based Smart Grid Simulator Design Team</p>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded transition">
+                        <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-xs">NB</div>
+                        <span class="font-medium text-slate-700">Napisah T. Bantog</span>
+                    </div>
+                    <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded transition">
+                        <div class="w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center font-bold text-xs">JB</div>
+                        <span class="font-medium text-slate-700">Josa Daniela F. Bautista</span>
+                    </div>
+                    <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded transition">
+                        <div class="w-8 h-8 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center font-bold text-xs">JC</div>
+                        <span class="font-medium text-slate-700">Joanne O. Cantos</span>
+                    </div>
+                    <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded transition">
+                        <div class="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center font-bold text-xs">FF</div>
+                        <span class="font-medium text-slate-700">Fernando Jr. F. Faltado</span>
+                    </div>
+                    <div class="flex items-center gap-3 p-2 hover:bg-slate-50 rounded transition">
+                        <div class="w-8 h-8 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-bold text-xs">BL</div>
+                        <span class="font-medium text-slate-700">Bryan James T. Litan</span>
+                    </div>
+                </div>
+                <div class="mt-6 pt-6 border-t border-gray-100 text-center">
+                    <p class="text-xs font-bold text-slate-800 uppercase tracking-wider">College of Engineering</p>
+                    <p class="text-xs text-slate-500 mt-1">Batangas State University<br>The National Engineering University</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- DATA SOURCES ---
         const branchData = [
@@ -296,6 +340,14 @@
             renderTopology();
             renderInputTable();
         };
+
+        function openAuthorModal() {
+            document.getElementById('authorModal').classList.remove('hidden');
+        }
+
+        function closeAuthorModal() {
+            document.getElementById('authorModal').classList.add('hidden');
+        }
 
         function renderTopology() {
             const list = document.getElementById('topologyList');
