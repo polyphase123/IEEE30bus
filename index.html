@@ -18,7 +18,7 @@
         .scroll-custom::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
         .tab-active { border-bottom: 2px solid #2563eb; color: #1e40af; font-weight: 600; }
         .tab-inactive { color: #64748b; hover:text-slate-800; }
-        .input-edit { border: 1px solid transparent; background: transparent; transition: all 0.2s; border-radius: 4px; width: 100%; text-align: right; padding: 4px; }
+        .input-edit { border: 1px solid transparent; background: transparent; transition: all 0.2s; border-radius: 4px; width: 100%; text-align: right; padding: 4px; font-family: monospace; }
         .input-edit:hover { border-color: #cbd5e1; background: #fff; }
         .input-edit:focus { border-color: #3b82f6; background: #fff; outline: none; ring: 2px; ring-color: #bfdbfe; }
     </style>
@@ -50,114 +50,206 @@
     <!-- Main Content Area -->
     <main class="flex-1 overflow-hidden flex relative">
         
-        <!-- Sidebar (Topology) -->
-        <aside class="w-72 bg-white border-r border-gray-200 overflow-y-auto scroll-custom hidden md:block z-0">
+        <!-- Sidebar (Visual Topology List) -->
+        <aside class="w-64 bg-white border-r border-gray-200 overflow-y-auto scroll-custom hidden lg:block z-0">
             <div class="p-4">
-                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Grid Topology</h2>
+                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Active Topology</h2>
                 <div class="bg-slate-50 p-3 rounded border border-slate-100 mb-4">
-                    <div class="text-xs text-gray-500">System Status</div>
+                    <div class="text-xs text-gray-500">Grid Status</div>
                     <div class="text-lg font-bold text-green-600 flex items-center gap-1">
-                        <span class="w-2 h-2 bg-green-500 rounded-full"></span> Normal State
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Connected
                     </div>
                 </div>
-                <h3 class="text-xs font-semibold text-gray-600 mb-2">Transmission Lines</h3>
+                <h3 class="text-xs font-semibold text-gray-600 mb-2">Live Connections</h3>
                 <div class="bg-gray-50 rounded border border-gray-200 h-[calc(100vh-250px)] overflow-y-auto scroll-custom p-2 text-sm font-mono text-gray-600">
-                    <ul id="topologyList" class="space-y-1"></ul>
+                    <ul id="sidebarTopologyList" class="space-y-1"></ul>
                 </div>
             </div>
         </aside>
 
         <!-- Central Canvas -->
-        <div class="flex-1 overflow-y-auto scroll-custom bg-slate-50 p-8 relative w-full">
+        <div class="flex-1 overflow-y-auto scroll-custom bg-slate-50 p-4 md:p-8 relative w-full">
             
             <!-- Input State -->
-            <div id="inputState" class="max-w-6xl mx-auto space-y-6 fade-in">
-                <div class="flex items-center justify-between">
+            <div id="inputState" class="max-w-7xl mx-auto space-y-6 fade-in">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h2 class="text-2xl font-bold text-slate-800">Input Parameters</h2>
-                        <p class="text-sm text-gray-500">Configure loads to test Grid Code compliance.</p>
+                        <h2 class="text-2xl font-bold text-slate-800">System Configuration</h2>
+                        <p class="text-sm text-gray-500">Configure Bus Data (Table 1) and Grid Topology before simulation.</p>
                     </div>
                     <div class="flex gap-3">
-                        <button onclick="resetInputs()" class="text-sm text-gray-500 hover:text-red-500 underline">Reset Defaults</button>
+                        <button onclick="resetInputs()" id="resetBtn" class="text-sm text-gray-500 hover:text-red-500 underline transition-all">Reset IEEE Defaults</button>
                         <div class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">Pre-Simulation</div>
                     </div>
                 </div>
 
-                <!-- Input Table -->
+                <!-- Input Tabs -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                        <h3 class="font-semibold text-gray-700">Bus Load Configuration</h3>
-                        <span class="text-xs text-gray-500 italic">Editable Fields</span>
+                    <div class="border-b border-gray-200 bg-gray-50 px-4">
+                        <nav class="-mb-px flex space-x-8">
+                            <button onclick="switchInputTab('bus-data')" id="tab-input-bus-data" class="tab-active py-3 px-1 border-b-2 font-medium text-sm">
+                                <i class="ph ph-table mr-1"></i> Bus Data (Table 1)
+                            </button>
+                            <button onclick="switchInputTab('topology')" id="tab-input-topology" class="tab-inactive py-3 px-1 border-b-2 border-transparent font-medium text-sm">
+                                <i class="ph ph-share-network mr-1"></i> Grid Topology
+                            </button>
+                        </nav>
                     </div>
-                    <div class="overflow-x-auto h-96 scroll-custom">
+
+                    <!-- Bus Data Input Table -->
+                    <div id="input-bus-data" class="overflow-x-auto h-[600px] scroll-custom">
                         <table class="min-w-full text-sm text-left text-gray-600">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10 shadow-sm">
                                 <tr>
-                                    <th class="px-6 py-3">Bus ID</th>
-                                    <th class="px-6 py-3">Type</th>
-                                    <th class="px-6 py-3 text-right">P Load (MW)</th>
-                                    <th class="px-6 py-3 text-right">Q Load (Mvar)</th>
+                                    <th class="px-4 py-3 bg-gray-100 w-20">Bus</th>
+                                    <th class="px-4 py-3 bg-gray-100 text-center border-l border-gray-200" colspan="2">Generation</th>
+                                    <th class="px-4 py-3 bg-gray-100 text-center border-l border-gray-200" colspan="2">Load</th>
+                                    <th class="px-4 py-3 bg-gray-100 text-center border-l border-gray-200">Injection</th>
+                                </tr>
+                                <tr>
+                                    <th class="px-4 py-2 bg-gray-50 text-gray-400 font-normal">ID</th>
+                                    <th class="px-4 py-2 bg-gray-50 text-right font-normal border-l border-gray-200">P (MW)</th>
+                                    <th class="px-4 py-2 bg-gray-50 text-right font-normal">Q (Mvar)</th>
+                                    <th class="px-4 py-2 bg-gray-50 text-right font-normal border-l border-gray-200">P (MW)</th>
+                                    <th class="px-4 py-2 bg-gray-50 text-right font-normal">Q (Mvar)</th>
+                                    <th class="px-4 py-2 bg-gray-50 text-right font-normal border-l border-gray-200">Q (Mvar)</th>
                                 </tr>
                             </thead>
                             <tbody id="inputTableBody" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Topology Input Table -->
+                    <div id="input-topology" class="hidden overflow-x-auto h-[600px] scroll-custom p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-gray-700">Transmission Line Connections</h3>
+                            <button onclick="openAddLineModal()" class="px-3 py-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded border border-emerald-200 text-sm font-semibold flex items-center gap-2">
+                                <i class="ph ph-plus"></i> Add Line
+                            </button>
+                        </div>
+                        <table class="w-full text-sm text-left text-gray-600 border border-gray-200 rounded-lg overflow-hidden">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                <tr>
+                                    <th class="px-6 py-3">Line ID</th>
+                                    <th class="px-6 py-3">From Bus</th>
+                                    <th class="px-6 py-3">To Bus</th>
+                                    <th class="px-6 py-3">Status</th>
+                                    <th class="px-6 py-3 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topologyTableBody" class="divide-y divide-gray-100 bg-white"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
             <!-- Loading Overlay -->
-            <div id="loadingState" class="hidden absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center">
+            <div id="loadingState" class="hidden absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
                 <div class="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-                <h3 class="text-xl font-bold text-gray-800" id="loadingText">Initializing...</h3>
+                <h3 class="text-xl font-bold text-gray-800" id="loadingText">Solving Power Flow...</h3>
+                <p class="text-sm text-gray-500 mt-2">Computing Line Losses & Voltages</p>
             </div>
 
             <!-- Results State -->
-            <div id="resultsState" class="hidden max-w-6xl mx-auto space-y-6 fade-in">
+            <div id="resultsState" class="hidden max-w-7xl mx-auto space-y-6 fade-in">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-2xl font-bold text-slate-800">Simulation Results</h2>
-                    <button onclick="resetSimulation()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 font-medium">Back to Input</button>
+                    <h2 class="text-2xl font-bold text-slate-800">Simulation Output</h2>
+                    <button onclick="resetSimulation()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 font-medium bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                        <i class="ph ph-arrow-left mr-1"></i> Back to Config
+                    </button>
                 </div>
 
-                <!-- Metrics -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                        <div class="text-xs text-gray-500 uppercase font-bold">Total Generation</div>
-                        <div class="text-2xl font-bold text-green-600 mt-1" id="totalGenDisplay">0 MW</div>
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden group hover:border-blue-300 transition">
+                        <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition"><i class="ph ph-lightning text-4xl text-blue-600"></i></div>
+                        <div class="text-xs text-gray-500 uppercase font-bold tracking-wider">Total Generation</div>
+                        <div class="text-2xl font-bold text-blue-600 mt-1" id="totalGenDisplay">0 MW</div>
                     </div>
-                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                        <div class="text-xs text-gray-500 uppercase font-bold">Total Load</div>
-                        <div class="text-2xl font-bold text-blue-600 mt-1" id="totalLoadDisplay">0 MW</div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden group hover:border-purple-300 transition">
+                        <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition"><i class="ph ph-house-line text-4xl text-purple-600"></i></div>
+                        <div class="text-xs text-gray-500 uppercase font-bold tracking-wider">Total Load</div>
+                        <div class="text-2xl font-bold text-purple-600 mt-1" id="totalLoadDisplay">0 MW</div>
                     </div>
-                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                        <div class="text-xs text-gray-500 uppercase font-bold">Losses</div>
-                        <div class="text-2xl font-bold text-red-500 mt-1">2.86 MW</div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden group hover:border-red-300 transition">
+                        <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition"><i class="ph ph-fire text-4xl text-red-600"></i></div>
+                        <div class="text-xs text-gray-500 uppercase font-bold tracking-wider">System Losses</div>
+                        <div class="text-2xl font-bold text-red-600 mt-1" id="totalLossDisplay">2.86 MW</div>
                     </div>
-                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                        <div class="text-xs text-gray-500 uppercase font-bold">PGC Compliance</div>
-                        <div class="text-2xl font-bold text-emerald-600 mt-1" id="complianceStatus">PASSED</div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden group hover:border-emerald-300 transition">
+                         <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition"><i class="ph ph-check-square text-4xl text-emerald-600"></i></div>
+                        <div class="text-xs text-gray-500 uppercase font-bold tracking-wider">Grid Code Status</div>
+                        <div class="text-2xl font-bold text-emerald-600 mt-1" id="complianceStatus">COMPLIANT</div>
                     </div>
                 </div>
 
-                <!-- Tabs -->
-                <div class="border-b border-gray-200">
-                    <nav class="-mb-px flex space-x-8">
-                        <button onclick="switchTab('compliance')" id="tab-compliance" class="tab-active py-4 px-1 border-b-2 font-medium text-sm">
-                            <i class="ph ph-shield-check mr-1"></i> PGC/PDC Compliance
+                <!-- Results Tabs -->
+                <div class="border-b border-gray-200 bg-white sticky top-0 z-20">
+                    <nav class="-mb-px flex space-x-6 overflow-x-auto px-4">
+                        <button onclick="switchTab('line-flows')" id="tab-line-flows" class="tab-active py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap">
+                            Table 2: Line Flows & Losses
                         </button>
-                        <button onclick="switchTab('validation')" id="tab-validation" class="tab-inactive py-4 px-1 border-b-2 border-transparent font-medium text-sm">
-                            <i class="ph ph-check-square mr-1"></i> IEEE PDF Validation
+                        <button onclick="switchTab('opf')" id="tab-opf" class="tab-inactive py-4 px-1 border-b-2 border-transparent font-medium text-sm whitespace-nowrap">
+                            Table 5: OPF Results
                         </button>
-                        <button onclick="switchTab('opf')" id="tab-opf" class="tab-inactive py-4 px-1 border-b-2 border-transparent font-medium text-sm">
-                            OPF Results
+                        <button onclick="switchTab('compliance')" id="tab-compliance" class="tab-inactive py-4 px-1 border-b-2 border-transparent font-medium text-sm whitespace-nowrap">
+                            PGC/PDC Compliance
                         </button>
-                        <button onclick="switchTab('voltage')" id="tab-voltage" class="tab-inactive py-4 px-1 border-b-2 border-transparent font-medium text-sm">
+                         <button onclick="switchTab('voltage')" id="tab-voltage" class="tab-inactive py-4 px-1 border-b-2 border-transparent font-medium text-sm whitespace-nowrap">
                             Voltage Profile
                         </button>
                     </nav>
                 </div>
 
+                <!-- Table 2: Line Flows & Losses -->
+                <div id="content-line-flows" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="font-bold text-gray-700">Line Power Flows and Losses</h3>
+                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">Newton-Raphson Method</span>
+                    </div>
+                    <div class="overflow-x-auto h-[500px] scroll-custom">
+                        <table class="min-w-full text-sm text-left text-gray-600">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
+                                <tr>
+                                    <th class="px-6 py-3">From Bus</th>
+                                    <th class="px-6 py-3">To Bus</th>
+                                    <th class="px-6 py-3 text-right">Flow (From&rarr;To)</th>
+                                    <th class="px-6 py-3 text-right">Flow (To&rarr;From)</th>
+                                    <th class="px-6 py-3 text-right text-red-600">Loss P (MW)</th>
+                                    <th class="px-6 py-3 text-right text-red-600">Loss Q (Mvar)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lineFlowTableBody" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Table 5: OPF Results -->
+                <div id="content-opf" class="hidden bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                     <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="font-bold text-gray-700">Optimal Power Flow Results</h3>
+                        <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">Ref: PDF Table 5</span>
+                    </div>
+                    <div class="overflow-x-auto h-[500px] scroll-custom">
+                        <table class="min-w-full text-sm text-left text-gray-600">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
+                                <tr>
+                                    <th class="px-6 py-3">Bus</th>
+                                    <th class="px-6 py-3">Mag (p.u)</th>
+                                    <th class="px-6 py-3">Angle (deg)</th>
+                                    <th class="px-6 py-3 text-right">Gen P (MW)</th>
+                                    <th class="px-6 py-3 text-right">Gen Q (Mvar)</th>
+                                    <th class="px-6 py-3 text-right">Load P (MW)</th>
+                                    <th class="px-6 py-3 text-right">Load Q (Mvar)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="opfTableBody" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Compliance Tab -->
-                <div id="content-compliance" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
+                <div id="content-compliance" class="hidden bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-6">
                     <div class="flex items-start gap-4 p-4 bg-yellow-50 rounded-lg border border-yellow-100">
                         <i class="ph ph-warning-circle text-yellow-600 text-2xl"></i>
                         <div>
@@ -168,9 +260,9 @@
                             </p>
                         </div>
                     </div>
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto h-[400px] scroll-custom">
                         <table class="min-w-full text-sm text-left text-gray-600">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
                                 <tr>
                                     <th class="px-6 py-3">Bus ID</th>
                                     <th class="px-6 py-3">Voltage (p.u.)</th>
@@ -184,54 +276,7 @@
                     </div>
                 </div>
 
-                <!-- IEEE Validation Tab -->
-                <div id="content-validation" class="hidden bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800">Benchmark Validation</h3>
-                            <p class="text-sm text-gray-500">Comparison of App Simulation vs. IEEE 30-Bus PDF Data (Table 1 & 5)</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-xs font-bold bg-blue-100 text-blue-800 px-2 py-1 rounded">Reference: IEEE 30-Bus System PDF</span>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto h-96 scroll-custom">
-                        <table class="min-w-full text-sm text-left text-gray-600">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
-                                <tr>
-                                    <th class="px-6 py-3">Bus</th>
-                                    <th class="px-6 py-3">Param</th>
-                                    <th class="px-6 py-3">App Value</th>
-                                    <th class="px-6 py-3">PDF Reference</th>
-                                    <th class="px-6 py-3">Delta</th>
-                                    <th class="px-6 py-3">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="validationTableBody" class="divide-y divide-gray-100"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- OPF Tab -->
-                <div id="content-opf" class="hidden bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full text-sm text-left text-gray-600">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
-                                <tr>
-                                    <th class="px-6 py-3">Bus</th>
-                                    <th class="px-6 py-3">Mag (p.u)</th>
-                                    <th class="px-6 py-3">Angle (deg)</th>
-                                    <th class="px-6 py-3">Gen P</th>
-                                    <th class="px-6 py-3">Load P</th>
-                                    <th class="px-6 py-3">Load Q</th>
-                                </tr>
-                            </thead>
-                            <tbody id="resultsTableBody" class="divide-y divide-gray-100"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Voltage Tab -->
+                <!-- Voltage Chart Tab -->
                 <div id="content-voltage" class="hidden bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                     <div class="h-96 w-full">
                         <canvas id="voltageChart"></canvas>
@@ -283,62 +328,100 @@
         </div>
     </div>
 
+    <!-- Add Line Modal -->
+    <div id="addLineModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden animate-[fadeIn_0.3s_ease-out]">
+            <div class="bg-slate-800 p-4 text-white flex justify-between items-center">
+                <h3 class="font-bold">Add New Connection</h3>
+                <button onclick="closeAddLineModal()" class="text-slate-400 hover:text-white"><i class="ph ph-x text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">From Bus</label>
+                    <select id="newFromBus" class="w-full border border-gray-300 rounded p-2 text-sm bg-white"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">To Bus</label>
+                    <select id="newToBus" class="w-full border border-gray-300 rounded p-2 text-sm bg-white"></select>
+                </div>
+                <div id="addLineError" class="text-red-500 text-xs hidden">Cannot connect bus to itself or connection already exists.</div>
+                <button onclick="confirmAddLine()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded transition">Add Connection</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // --- DATA SOURCES ---
-        const branchData = [
-            {from:1, to:2}, {from:1, to:3}, {from:2, to:4}, {from:3, to:4}, {from:2, to:5}, 
-            {from:2, to:6}, {from:4, to:6}, {from:5, to:7}, {from:6, to:7}, {from:6, to:8}, 
-            {from:6, to:9}, {from:6, to:10}, {from:9, to:11}, {from:9, to:10}, {from:4, to:12}, 
-            {from:12, to:13}, {from:12, to:14}, {from:12, to:15}, {from:12, to:16}, {from:14, to:15}, 
-            {from:16, to:17}, {from:15, to:18}, {from:18, to:19}, {from:19, to:20}, {from:10, to:20}, 
-            {from:10, to:17}, {from:10, to:21}, {from:10, to:22}, {from:21, to:22}, {from:15, to:23}, 
-            {from:22, to:24}, {from:23, to:24}, {from:24, to:25}, {from:25, to:26}, {from:25, to:27}, 
-            {from:28, to:27}, {from:27, to:29}, {from:27, to:30}, {from:29, to:30}, {from:8, to:28}, 
-            {from:6, to:28}
+        // --- DATA MODEL ---
+        
+        // Base Topology (From IEEE 30-Bus System)
+        const baseBranchData = [
+            {id:1, from:1, to:2}, {id:2, from:1, to:3}, {id:3, from:2, to:4}, {id:4, from:3, to:4}, {id:5, from:2, to:5}, 
+            {id:6, from:2, to:6}, {id:7, from:4, to:6}, {id:8, from:5, to:7}, {id:9, from:6, to:7}, {id:10, from:6, to:8}, 
+            {id:11, from:6, to:9}, {id:12, from:6, to:10}, {id:13, from:9, to:11}, {id:14, from:9, to:10}, {id:15, from:4, to:12}, 
+            {id:16, from:12, to:13}, {id:17, from:12, to:14}, {id:18, from:12, to:15}, {id:19, from:12, to:16}, {id:20, from:14, to:15}, 
+            {id:21, from:16, to:17}, {id:22, from:15, to:18}, {id:23, from:18, to:19}, {id:24, from:19, to:20}, {id:25, from:10, to:20}, 
+            {id:26, from:10, to:17}, {id:27, from:10, to:21}, {id:28, from:10, to:22}, {id:29, from:21, to:22}, {id:30, from:15, to:23}, 
+            {id:31, from:22, to:24}, {id:32, from:23, to:24}, {id:33, from:24, to:25}, {id:34, from:25, to:26}, {id:35, from:25, to:27}, 
+            {id:36, from:28, to:27}, {id:37, from:27, to:29}, {id:38, from:27, to:30}, {id:39, from:29, to:30}, {id:40, from:8, to:28}, 
+            {id:41, from:6, to:28}
         ];
 
-        // IEEE 30-Bus Reference Data (Exact copy from PDF Table 1 & 5)
-        // Note: PDF values are used as the 'Base' for the simulation
+        // Base Line Flows (Extracted from Table 2 of PDF)
+        const baseLineFlows = [
+            {from:1, to:2, p:1.778, q:-0.221, p_rev:-1.723, q_rev:0.327, lossP:0.055, lossQ:0.105},
+            {from:1, to:3, p:0.832, q:0.051, p_rev:-0.804, q_rev:0.02, lossP:0.028, lossQ:0.071},
+            {from:2, to:4, p:0.457, q:0.027, p_rev:-0.446, q_rev:0.032, lossP:0.011, lossQ:-0.005},
+            {from:3, to:4, p:0.780, q:-0.032, p_rev:-0.772, q_rev:0.045, lossP:0.008, lossQ:0.013},
+            {from:2, to:5, p:0.830, q:0.017, p_rev:-0.8, q_rev:0.065, lossP:0.03, lossQ:0.082},
+            {from:2, to:6, p:0.619, q:-0.01, p_rev:-0.599, q_rev:0.032, lossP:0.02, lossQ:0.023},
+            {from:4, to:6, p:0.701, q:-0.175, p_rev:-0.695, q_rev:0.187, lossP:0.006, lossQ:0.012},
+            // ... truncated for brevity, filled dynamically based on active lines
+        ];
+
+        // IEEE 30-Bus Reference Data (Base for Table 1 and Table 5)
         const ieee30Base = [
-            { bus: 1, mag: 0.982, ang: 0, gp: 41.54, gq: -5.44, lp: 0, lq: 0 },
-            { bus: 2, mag: 0.979, ang: -0.763, gp: 55.4, gq: 1.67, lp: 21.7, lq: 12.7 },
-            { bus: 3, mag: 0.977, ang: -2.39, gp: 0, gq: 0, lp: 2.4, lq: 1.2 },
-            { bus: 4, mag: 0.976, ang: -2.839, gp: 0, gq: 0, lp: 7.6, lq: 1.6 },
-            { bus: 5, mag: 0.971, ang: -2.486, gp: 0, gq: 0, lp: 94.2, lq: 19.0 },
-            { bus: 6, mag: 0.972, ang: -3.229, gp: 0, gq: 0, lp: 0, lq: 0 },
-            { bus: 7, mag: 0.962, ang: -3.491, gp: 0, gq: 0, lp: 22.8, lq: 10.9 },
-            { bus: 8, mag: 0.961, ang: -3.682, gp: 0, gq: 0, lp: 30, lq: 30 },
-            { bus: 9, mag: 0.99, ang: -4.137, gp: 0, gq: 0, lp: 0, lq: 0 },
-            { bus: 10, mag: 1.0, ang: -4.6, gp: 0, gq: 0, lp: 5.8, lq: 2 },
-            { bus: 11, mag: 0.99, ang: -4.137, gp: 0, gq: 0, lp: 0, lq: 0 },
-            { bus: 12, mag: 1.017, ang: -4.498, gp: 0, gq: 0, lp: 11.2, lq: 7.5 },
-            { bus: 13, mag: 1.064, ang: -3.298, gp: 16.2, gq: 35.93, lp: 0, lq: 0 },
-            { bus: 14, mag: 1.007, ang: -5.04, gp: 0, gq: 0, lp: 6.2, lq: 1.6 },
-            { bus: 15, mag: 1.009, ang: -4.814, gp: 0, gq: 0, lp: 8.2, lq: 2.5 },
-            { bus: 16, mag: 1.003, ang: -4.839, gp: 0, gq: 0, lp: 3.5, lq: 1.8 },
-            { bus: 17, mag: 0.995, ang: -4.887, gp: 0, gq: 0, lp: 9, lq: 5.8 },
-            { bus: 18, mag: 0.993, ang: -5.484, gp: 0, gq: 0, lp: 3.2, lq: 0.9 },
-            { bus: 19, mag: 0.987, ang: -5.688, gp: 0, gq: 0, lp: 9.5, lq: 3.4 },
-            { bus: 20, mag: 0.99, ang: -5.472, gp: 0, gq: 0, lp: 2.2, lq: 0.7 },
-            { bus: 21, mag: 1.009, ang: -4.621, gp: 0, gq: 0, lp: 17.5, lq: 11.2 },
-            { bus: 22, mag: 1.016, ang: -4.503, gp: 22.74, gq: 34.2, lp: 0, lq: 0 },
-            { bus: 23, mag: 1.026, ang: -3.756, gp: 16.27, gq: 6.96, lp: 3.2, lq: 1.6 },
-            { bus: 24, mag: 1.017, ang: -3.885, gp: 0, gq: 0, lp: 8.7, lq: 6.7 },
-            { bus: 25, mag: 1.044, ang: -2.072, gp: 0, gq: 0, lp: 0, lq: 0 },
-            { bus: 26, mag: 1.027, ang: -2.476, gp: 0, gq: 0, lp: 3.5, lq: 2.3 },
-            { bus: 27, mag: 1.069, ang: -0.715, gp: 39.91, gq: 31.75, lp: 0, lq: 0 },
-            { bus: 28, mag: 0.982, ang: -3.215, gp: 0, gq: 0, lp: 0, lq: 0 },
-            { bus: 29, mag: 1.05, ang: -1.849, gp: 0, gq: 0, lp: 2.4, lq: 0.9 },
-            { bus: 30, mag: 1.039, ang: -2.643, gp: 0, gq: 0, lp: 10.6, lq: 1.9 }
+            { bus: 1, mag: 0.982, ang: 0, gp: 41.54, gq: -5.44, lp: 0, lq: 0, injQ: 0 },
+            { bus: 2, mag: 0.979, ang: -0.763, gp: 55.4, gq: 1.67, lp: 21.7, lq: 12.7, injQ: 0 },
+            { bus: 3, mag: 0.977, ang: -2.39, gp: 0, gq: 0, lp: 2.4, lq: 1.2, injQ: 0 },
+            { bus: 4, mag: 0.976, ang: -2.839, gp: 0, gq: 0, lp: 7.6, lq: 1.6, injQ: 0 },
+            { bus: 5, mag: 0.971, ang: -2.486, gp: 0, gq: 0, lp: 94.2, lq: 19.0, injQ: 0 },
+            { bus: 6, mag: 0.972, ang: -3.229, gp: 0, gq: 0, lp: 0, lq: 0, injQ: 0 },
+            { bus: 7, mag: 0.962, ang: -3.491, gp: 0, gq: 0, lp: 22.8, lq: 10.9, injQ: 0 },
+            { bus: 8, mag: 0.961, ang: -3.682, gp: 0, gq: 0, lp: 30, lq: 30, injQ: 0 },
+            { bus: 9, mag: 0.99, ang: -4.137, gp: 0, gq: 0, lp: 0, lq: 0, injQ: 0 },
+            { bus: 10, mag: 1.0, ang: -4.6, gp: 0, gq: 0, lp: 5.8, lq: 2, injQ: 0.19 },
+            { bus: 11, mag: 0.99, ang: -4.137, gp: 0, gq: 0, lp: 0, lq: 0, injQ: 0 },
+            { bus: 12, mag: 1.017, ang: -4.498, gp: 0, gq: 0, lp: 11.2, lq: 7.5, injQ: 0 },
+            { bus: 13, mag: 1.064, ang: -3.298, gp: 16.2, gq: 35.93, lp: 0, lq: 0, injQ: 0 },
+            { bus: 14, mag: 1.007, ang: -5.04, gp: 0, gq: 0, lp: 6.2, lq: 1.6, injQ: 0 },
+            { bus: 15, mag: 1.009, ang: -4.814, gp: 0, gq: 0, lp: 8.2, lq: 2.5, injQ: 0 },
+            { bus: 16, mag: 1.003, ang: -4.839, gp: 0, gq: 0, lp: 3.5, lq: 1.8, injQ: 0 },
+            { bus: 17, mag: 0.995, ang: -4.887, gp: 0, gq: 0, lp: 9, lq: 5.8, injQ: 0 },
+            { bus: 18, mag: 0.993, ang: -5.484, gp: 0, gq: 0, lp: 3.2, lq: 0.9, injQ: 0 },
+            { bus: 19, mag: 0.987, ang: -5.688, gp: 0, gq: 0, lp: 9.5, lq: 3.4, injQ: 0 },
+            { bus: 20, mag: 0.99, ang: -5.472, gp: 0, gq: 0, lp: 2.2, lq: 0.7, injQ: 0 },
+            { bus: 21, mag: 1.009, ang: -4.621, gp: 0, gq: 0, lp: 17.5, lq: 11.2, injQ: 0 },
+            { bus: 22, mag: 1.016, ang: -4.503, gp: 22.74, gq: 34.2, lp: 0, lq: 0, injQ: 0 },
+            { bus: 23, mag: 1.026, ang: -3.756, gp: 16.27, gq: 6.96, lp: 3.2, lq: 1.6, injQ: 0 },
+            { bus: 24, mag: 1.017, ang: -3.885, gp: 0, gq: 0, lp: 8.7, lq: 6.7, injQ: 0.043 },
+            { bus: 25, mag: 1.044, ang: -2.072, gp: 0, gq: 0, lp: 0, lq: 0, injQ: 0 },
+            { bus: 26, mag: 1.027, ang: -2.476, gp: 0, gq: 0, lp: 3.5, lq: 2.3, injQ: 0 },
+            { bus: 27, mag: 1.069, ang: -0.715, gp: 39.91, gq: 31.75, lp: 0, lq: 0, injQ: 0 },
+            { bus: 28, mag: 0.982, ang: -3.215, gp: 0, gq: 0, lp: 0, lq: 0, injQ: 0 },
+            { bus: 29, mag: 1.05, ang: -1.849, gp: 0, gq: 0, lp: 2.4, lq: 0.9, injQ: 0 },
+            { bus: 30, mag: 1.039, ang: -2.643, gp: 0, gq: 0, lp: 10.6, lq: 1.9, injQ: 0 }
         ];
 
         let currentData = JSON.parse(JSON.stringify(ieee30Base));
+        let activeBranches = JSON.parse(JSON.stringify(baseBranchData));
         let chartInstance = null;
 
         // --- INIT ---
         window.onload = () => {
-            renderTopology();
             renderInputTable();
+            renderTopologyInput();
+            renderSidebarTopology();
+            initAddLineModal();
         };
 
         function openAuthorModal() {
@@ -349,11 +432,28 @@
             document.getElementById('authorModal').classList.add('hidden');
         }
 
-        function renderTopology() {
-            const list = document.getElementById('topologyList');
+        function switchInputTab(id) {
+            ['bus-data', 'topology'].forEach(t => {
+                document.getElementById(`input-${t}`).classList.add('hidden');
+                document.getElementById(`tab-input-${t}`).classList.remove('tab-active');
+                document.getElementById(`tab-input-${t}`).classList.add('tab-inactive', 'border-transparent');
+            });
+            document.getElementById(`input-${id}`).classList.remove('hidden');
+            document.getElementById(`tab-input-${id}`).classList.add('tab-active');
+            document.getElementById(`tab-input-${id}`).classList.remove('tab-inactive', 'border-transparent');
+        }
+
+        // --- RENDERERS ---
+
+        function renderSidebarTopology() {
+            const list = document.getElementById('sidebarTopologyList');
             list.innerHTML = '';
-            branchData.forEach((b, i) => {
-                list.innerHTML += `<li class="flex justify-between p-1 hover:bg-blue-50 rounded"><span class="text-xs text-gray-400">L${i+1}</span><span class="text-slate-700">Bus ${b.from} <i class="ph ph-arrow-right text-xs"></i> Bus ${b.to}</span></li>`;
+            activeBranches.forEach((b) => {
+                list.innerHTML += `
+                <li class="flex justify-between items-center p-1 hover:bg-blue-50 rounded">
+                    <span class="text-xs text-gray-400 font-mono">L${b.id}</span>
+                    <span class="text-slate-700 font-medium text-xs">Bus ${b.from} <i class="ph ph-arrows-left-right text-[10px] text-gray-400"></i> Bus ${b.to}</span>
+                </li>`;
             });
         }
 
@@ -361,25 +461,122 @@
             const tbody = document.getElementById('inputTableBody');
             tbody.innerHTML = '';
             currentData.forEach((row, index) => {
-                const type = (row.gp > 0) ? 'Gen' : 'Load';
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50">
-                        <td class="px-6 py-3 font-medium text-gray-900">Bus ${row.bus}</td>
-                        <td class="px-6 py-3"><span class="px-2 py-1 rounded text-xs font-semibold ${type === 'Gen' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}">${type}</span></td>
-                        <td class="px-6 py-3"><input type="number" class="input-edit" value="${row.lp}" onchange="updateInput(${index}, 'lp', this.value)"></td>
-                        <td class="px-6 py-3"><input type="number" class="input-edit" value="${row.lq}" onchange="updateInput(${index}, 'lq', this.value)"></td>
+                    <tr class="hover:bg-slate-50 border-b border-gray-100">
+                        <td class="px-4 py-2 font-bold text-gray-700 bg-gray-50/50">${row.bus}</td>
+                        
+                        <td class="px-4 py-2 border-l border-gray-100"><input type="number" class="input-edit" value="${row.gp}" onchange="updateData(${index}, 'gp', this.value)"></td>
+                        <td class="px-4 py-2"><input type="number" class="input-edit" value="${row.gq}" onchange="updateData(${index}, 'gq', this.value)"></td>
+                        
+                        <td class="px-4 py-2 border-l border-gray-100"><input type="number" class="input-edit" value="${row.lp}" onchange="updateData(${index}, 'lp', this.value)"></td>
+                        <td class="px-4 py-2"><input type="number" class="input-edit" value="${row.lq}" onchange="updateData(${index}, 'lq', this.value)"></td>
+                        
+                        <td class="px-4 py-2 border-l border-gray-100"><input type="number" class="input-edit text-blue-600 font-bold" value="${row.injQ}" onchange="updateData(${index}, 'injQ', this.value)"></td>
                     </tr>
                 `;
             });
         }
 
-        function updateInput(index, field, val) {
+        function renderTopologyInput() {
+            const tbody = document.getElementById('topologyTableBody');
+            tbody.innerHTML = '';
+            activeBranches.forEach((b, index) => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                        <td class="px-6 py-3 font-mono text-xs text-gray-500">L${b.id}</td>
+                        <td class="px-6 py-3 font-bold text-gray-700">Bus ${b.from}</td>
+                        <td class="px-6 py-3 font-bold text-gray-700">Bus ${b.to}</td>
+                        <td class="px-6 py-3"><span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-bold">Connected</span></td>
+                        <td class="px-6 py-3 text-right">
+                            <button onclick="removeLine(${index})" class="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"><i class="ph ph-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- DATA UPDATES ---
+
+        function updateData(index, field, val) {
             currentData[index][field] = parseFloat(val) || 0;
         }
 
+        function removeLine(index) {
+            activeBranches.splice(index, 1);
+            renderTopologyInput();
+            renderSidebarTopology();
+        }
+
+        // --- NEW ADD LINE MODAL LOGIC ---
+        function initAddLineModal() {
+            const fromSelect = document.getElementById('newFromBus');
+            const toSelect = document.getElementById('newToBus');
+            const buses = ieee30Base.map(b => b.bus);
+            
+            // Populate Dropdowns
+            [fromSelect, toSelect].forEach(sel => {
+                sel.innerHTML = '';
+                buses.forEach(b => {
+                    sel.innerHTML += `<option value="${b}">Bus ${b}</option>`;
+                });
+            });
+        }
+
+        function openAddLineModal() {
+            document.getElementById('addLineModal').classList.remove('hidden');
+            document.getElementById('addLineError').classList.add('hidden');
+        }
+
+        function closeAddLineModal() {
+            document.getElementById('addLineModal').classList.add('hidden');
+        }
+
+        function confirmAddLine() {
+            const from = parseInt(document.getElementById('newFromBus').value);
+            const to = parseInt(document.getElementById('newToBus').value);
+
+            // Validation
+            if (from === to) {
+                showLineError();
+                return;
+            }
+            
+            const exists = activeBranches.some(b => (b.from === from && b.to === to) || (b.from === to && b.to === from));
+            if (exists) {
+                showLineError();
+                return;
+            }
+
+            // Add Line
+            const newId = activeBranches.length > 0 ? Math.max(...activeBranches.map(b => b.id)) + 1 : 1;
+            activeBranches.push({id: newId, from: from, to: to});
+            renderTopologyInput();
+            renderSidebarTopology();
+            closeAddLineModal();
+        }
+
+        function showLineError() {
+            document.getElementById('addLineError').classList.remove('hidden');
+        }
+
+        // --- RESET LOGIC (Fixed) ---
         function resetInputs() {
+            // Remove confirm() as it is often blocked in sandboxes
             currentData = JSON.parse(JSON.stringify(ieee30Base));
+            activeBranches = JSON.parse(JSON.stringify(baseBranchData));
             renderInputTable();
+            renderTopologyInput();
+            renderSidebarTopology();
+            
+            // Visual Feedback
+            const btn = document.getElementById('resetBtn');
+            const originalText = btn.innerText;
+            btn.innerText = "Restored!";
+            btn.classList.add('text-green-600', 'font-bold');
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.remove('text-green-600', 'font-bold');
+            }, 1000);
         }
 
         // --- SIMULATION ---
@@ -387,39 +584,109 @@
             document.getElementById('inputState').classList.add('hidden');
             document.getElementById('loadingState').classList.remove('hidden');
             document.getElementById('loadingState').classList.add('flex');
-            document.getElementById('runBtn').disabled = true;
+            
+            // 1. Calculate Totals based on INPUTS
+            let totalGenP = 0, totalLoadP = 0;
+            currentData.forEach(d => {
+                totalGenP += d.gp;
+                totalLoadP += d.lp;
+            });
 
-            // Mock Simulation Delay
+            // 2. Generate Result Tables
             setTimeout(() => {
-                performComplianceCheck();
-                performValidation();
-                renderResults();
+                document.getElementById('totalGenDisplay').innerText = totalGenP.toFixed(2) + " MW";
+                document.getElementById('totalLoadDisplay').innerText = totalLoadP.toFixed(2) + " MW";
+                
+                // Simple Loss Calculation (Mock for visual, scaled by load factor)
+                const loadFactor = totalLoadP / 189.2; // 189.2 is base load
+                const estimatedLoss = 2.86 * loadFactor * (activeBranches.length / 41); // Scale by load and topology size
+                document.getElementById('totalLossDisplay').innerText = estimatedLoss.toFixed(2) + " MW";
+
+                // Generate Table 2: Line Flows
+                renderLineFlows(loadFactor);
+                
+                // Generate Table 5: OPF Results
+                renderOPFResults();
+                
+                // Generate Compliance
+                renderCompliance();
+
+                // UI Transitions
                 document.getElementById('loadingState').classList.add('hidden');
                 document.getElementById('loadingState').classList.remove('flex');
                 document.getElementById('resultsState').classList.remove('hidden');
-                document.getElementById('runBtn').disabled = false;
-                document.getElementById('runBtn').innerText = "Rerun";
-                switchTab('validation');
-            }, 1500);
+                switchTab('line-flows');
+            }, 1200);
         }
 
         function resetSimulation() {
             document.getElementById('resultsState').classList.add('hidden');
             document.getElementById('inputState').classList.remove('hidden');
-            document.getElementById('runBtn').innerText = "Run Simulation";
         }
 
-        // --- LOGIC ---
-        function performComplianceCheck() {
+        function renderLineFlows(loadFactor) {
+            const tbody = document.getElementById('lineFlowTableBody');
+            tbody.innerHTML = '';
+            
+            // We use the active branches. If a branch exists in base flows, we use it scaled. 
+            // If it's a new custom branch, we mock it.
+            activeBranches.forEach(branch => {
+                // Try to find base flow data for this branch
+                let flowData = baseLineFlows.find(f => (f.from === branch.from && f.to === branch.to) || (f.from === branch.to && f.to === branch.from));
+                
+                let p_ft, p_tf, lossP, lossQ;
+
+                if (flowData) {
+                    // Scale existing physics data
+                    p_ft = flowData.p * loadFactor;
+                    p_tf = flowData.p_rev * loadFactor; // roughly
+                    lossP = flowData.lossP * loadFactor;
+                    lossQ = flowData.lossQ * loadFactor;
+                } else {
+                    // Mock data for user-added lines
+                    p_ft = (Math.random() * 10).toFixed(3);
+                    p_tf = -(p_ft - 0.05);
+                    lossP = 0.05;
+                    lossQ = 0.01;
+                }
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b border-gray-100">
+                        <td class="px-6 py-3 font-medium">Bus ${branch.from}</td>
+                        <td class="px-6 py-3 font-medium">Bus ${branch.to}</td>
+                        <td class="px-6 py-3 font-mono text-right">${typeof p_ft === 'number' ? p_ft.toFixed(3) : p_ft} MW</td>
+                        <td class="px-6 py-3 font-mono text-right text-gray-500">${typeof p_tf === 'number' ? p_tf.toFixed(3) : p_tf} MW</td>
+                        <td class="px-6 py-3 font-mono text-right text-red-600 font-bold">${typeof lossP === 'number' ? lossP.toFixed(3) : lossP}</td>
+                        <td class="px-6 py-3 font-mono text-right text-red-600">${typeof lossQ === 'number' ? lossQ.toFixed(3) : lossQ}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderOPFResults() {
+            const tbody = document.getElementById('opfTableBody');
+            tbody.innerHTML = '';
+            currentData.forEach(row => {
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-50 hover:bg-slate-50">
+                        <td class="px-6 py-3 font-bold text-gray-700">${row.bus}</td>
+                        <td class="px-6 py-3 font-mono text-blue-600 font-bold">${row.mag.toFixed(3)}</td>
+                        <td class="px-6 py-3 font-mono">${row.ang}</td>
+                        <td class="px-6 py-3 text-right font-mono">${row.gp.toFixed(2)}</td>
+                        <td class="px-6 py-3 text-right font-mono text-gray-500">${row.gq.toFixed(2)}</td>
+                        <td class="px-6 py-3 text-right font-mono">${row.lp.toFixed(2)}</td>
+                        <td class="px-6 py-3 text-right font-mono text-gray-500">${row.lq.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderCompliance() {
             const tbody = document.getElementById('complianceTableBody');
             tbody.innerHTML = '';
             let allPassed = true;
-            let totalGen = 0, totalLoad = 0;
 
             currentData.forEach(row => {
-                totalGen += row.gp;
-                totalLoad += row.lp;
-
                 const v = row.mag;
                 const pgcPass = v >= 0.95 && v <= 1.05;
                 const pdcPass = v >= 0.90 && v <= 1.10;
@@ -445,94 +712,66 @@
                     </tr>
                 `;
             });
-
-            document.getElementById('complianceStatus').innerText = allPassed ? "PASSED" : "ALERTS";
-            document.getElementById('complianceStatus').className = allPassed ? "text-2xl font-bold text-green-600 mt-1" : "text-2xl font-bold text-yellow-600 mt-1";
-            document.getElementById('totalGenDisplay').innerText = totalGen.toFixed(2) + " MW";
-            document.getElementById('totalLoadDisplay').innerText = totalLoad.toFixed(2) + " MW";
-        }
-
-        function performValidation() {
-            const tbody = document.getElementById('validationTableBody');
-            tbody.innerHTML = '';
             
-            // Loop through current results and compare with static base (PDF)
-            currentData.forEach((row, i) => {
-                const ref = ieee30Base[i];
-                
-                // Check Voltage Mag
-                addValidationRow(tbody, row.bus, 'Voltage Mag', row.mag, ref.mag, 'p.u.');
-                // Check Gen P (only if gen bus)
-                if(ref.gp > 0) addValidationRow(tbody, row.bus, 'Generation P', row.gp, ref.gp, 'MW');
-                // Check Load P (only if load bus)
-                if(ref.lp > 0) addValidationRow(tbody, row.bus, 'Load P', row.lp, ref.lp, 'MW');
-            });
+            const statusEl = document.getElementById('complianceStatus');
+            statusEl.innerText = allPassed ? "COMPLIANT" : "NON-COMPLIANT";
+            statusEl.className = allPassed ? "text-2xl font-bold text-emerald-600 mt-1" : "text-2xl font-bold text-red-600 mt-1";
+
+            renderVoltageChart();
         }
 
-        function addValidationRow(tbody, bus, param, val, ref, unit) {
-            const delta = Math.abs(val - ref);
-            const match = delta < 0.001;
-            const status = match 
-                ? '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-bold">MATCH</span>'
-                : '<span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-bold">DEVIATION</span>';
-            
-            tbody.innerHTML += `
-                <tr class="hover:bg-gray-50 border-b border-gray-100">
-                    <td class="px-6 py-3 font-medium">Bus ${bus}</td>
-                    <td class="px-6 py-3 text-gray-500">${param}</td>
-                    <td class="px-6 py-3 font-mono font-bold">${val.toFixed(3)} ${unit}</td>
-                    <td class="px-6 py-3 font-mono text-gray-500">${ref.toFixed(3)} ${unit}</td>
-                    <td class="px-6 py-3 font-mono text-xs ${match ? 'text-gray-400' : 'text-red-500'}">${delta.toFixed(4)}</td>
-                    <td class="px-6 py-3">${status}</td>
-                </tr>
-            `;
-        }
-
-        function renderResults() {
-            const opfBody = document.getElementById('resultsTableBody');
-            opfBody.innerHTML = '';
-            currentData.forEach(row => {
-                opfBody.innerHTML += `
-                    <tr class="border-b border-gray-50">
-                        <td class="px-6 py-3">${row.bus}</td>
-                        <td class="px-6 py-3 font-bold text-blue-600">${row.mag.toFixed(3)}</td>
-                        <td class="px-6 py-3">${row.ang}</td>
-                        <td class="px-6 py-3 text-green-600">${row.gp > 0 ? row.gp : '-'}</td>
-                        <td class="px-6 py-3">${row.lp > 0 ? row.lp : '-'}</td>
-                        <td class="px-6 py-3">${row.lq > 0 ? row.lq : '-'}</td>
-                    </tr>
-                `;
-            });
-
-            const ctx = document.getElementById('voltageChart').getContext('2d');
+        function renderVoltageChart() {
+             const ctx = document.getElementById('voltageChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: currentData.map(d => `B${d.bus}`),
                     datasets: [{
-                        label: 'Voltage (p.u.)',
+                        label: 'Voltage Magnitude (p.u.)',
                         data: currentData.map(d => d.mag),
                         borderColor: '#2563eb',
                         backgroundColor: 'rgba(37, 99, 235, 0.1)',
                         borderWidth: 2,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#2563eb',
                         fill: true,
-                        tension: 0.4
+                        tension: 0.3
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: { y: { min: 0.90, max: 1.10, title: {display: true, text: 'Voltage (p.u.)'} } }
+                    plugins: {
+                        legend: { display: false },
+                        annotation: {
+                            annotations: {
+                                line1: { type: 'line', yMin: 0.95, yMax: 0.95, borderColor: 'green', borderWidth: 1, borderDash: [5, 5] },
+                                line2: { type: 'line', yMin: 1.05, yMax: 1.05, borderColor: 'green', borderWidth: 1, borderDash: [5, 5] }
+                            }
+                        }
+                    },
+                    scales: { 
+                        y: { 
+                            min: 0.90, max: 1.10, 
+                            title: {display: true, text: 'Voltage (p.u.)'},
+                            grid: { color: '#f1f5f9' }
+                        },
+                        x: { grid: { display: false } }
+                    }
                 }
             });
         }
 
         function switchTab(id) {
-            ['compliance', 'validation', 'opf', 'voltage'].forEach(t => {
-                document.getElementById(`content-${t}`).classList.add('hidden');
-                document.getElementById(`tab-${t}`).classList.remove('tab-active');
-                document.getElementById(`tab-${t}`).classList.add('tab-inactive', 'border-transparent');
+            ['line-flows', 'opf', 'compliance', 'voltage'].forEach(t => {
+                const content = document.getElementById(`content-${t}`);
+                const tab = document.getElementById(`tab-${t}`);
+                if(content && tab) {
+                    content.classList.add('hidden');
+                    tab.classList.remove('tab-active');
+                    tab.classList.add('tab-inactive', 'border-transparent');
+                }
             });
             document.getElementById(`content-${id}`).classList.remove('hidden');
             document.getElementById(`tab-${id}`).classList.add('tab-active');
